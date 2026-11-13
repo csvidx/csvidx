@@ -3,6 +3,11 @@ name = "csvidx"
 version = "0.1.0"
 edition = "2021"
 description = "Secondary index for huge CSV files: lookup by key without importing"
+license = "MIT"
+repository = "https://github.com/hoopengo/csvidx"
+readme = "README.md"
+keywords = ["csv", "index", "search", "data"]
+categories = ["database-implementations", "command-line-utilities"]
 
 [workspace]
 members = ["python"]
