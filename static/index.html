@@ -117,12 +117,13 @@
   /* ---------- format diagram: rendered object ---------- */
   .format { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; margin-top: 56px; align-items: center; }
   .rec { background: var(--surface); border: 1px solid var(--hairline); border-radius: 14px; padding: 24px; font-family: var(--mono); font-size: 13px; }
-  .rec .head { color: var(--text-3); display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--hairline); margin-bottom: 12px; }
-  .rec .rec-row { display: grid; grid-template-columns: 88px 1fr auto; gap: 12px; padding: 6px 0; color: var(--text-2); font-variant-numeric: tabular-nums; }
-  .rec .off, .rec .bytes { white-space: nowrap; }
+  .rec .head { color: var(--text-3); display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--hairline); margin-bottom: 4px; }
+  .rec .rec-row { display: grid; grid-template-columns: 64px 56px 1fr; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--hairline); align-items: baseline; }
+  .rec .rec-row:last-child { border-bottom: 0; padding-bottom: 0; }
   .rec .off { color: var(--text-3); }
-  .rec .bytes { color: var(--text); }
-  .rec .field { color: var(--text-3); }
+  .rec .off, .rec .bytes { white-space: nowrap; }
+  .rec .bytes { color: var(--text-2); }
+  .rec .field { color: var(--text-2); }
   .rec .rec-row.hot .bytes, .rec .rec-row.hot .field { color: var(--accent); }
   .format ul { list-style: none; }
   .format li { padding: 16px 0; border-bottom: 1px solid var(--hairline); }
@@ -217,7 +218,7 @@
         <span class="ms">21.0 s</span>
       </div>
     </div>
-    <p class="note">100M rows, 4.18 GiB, warm cache, key matching 8 rows. Same file, same query. From Python it is <code>idx.get(user_id)</code> → a pandas DataFrame; numbers verified against <code>grep</code> row counts. Honest edge: a key with 2% of the file loses to DuckDB on a cold cache — the index pays off while the query takes a small share of rows.</p>
+    <p class="note" style="margin-top: 1rem;">100M rows, 4.18 GiB, warm cache, key matching 8 rows. Same file, same query. From Python it is <code>idx.get(user_id)</code> → a pandas DataFrame; numbers verified against <code>grep</code> row counts. Honest edge: a key with 2% of the file loses to DuckDB on a cold cache — the index pays off while the query takes a small share of rows.</p>
   </section>
 
   <!-- usage -->
