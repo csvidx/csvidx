@@ -1,0 +1,14 @@
+data100/orders.csv, 4.18 GiB, 100M rows; 2 vCPU, 7.8 GiB RAM sandbox
+(scripts/extsort_check.py; first-run 64 MiB outlier of 88.9 s was not reproducible: reruns 25.5 s and 21.2 s)
+
+     limit     time  peak anon RSS  runs  sha256(index)
+     64 MiB    88.9s          65 MiB    24  8c079b5bb02c9f07
+    256 MiB    17.2s         257 MiB     6  8c079b5bb02c9f07
+   1024 MiB    24.2s        1025 MiB     2  8c079b5bb02c9f07
+   8192 MiB    18.6s        1527 MiB     0  8c079b5bb02c9f07
+verify --mem-limit-mib 64: OK in 22.5s, peak anon RSS 65 MiB
+
+data/orders.csv, 0.82 GiB, 20M rows
+      4 MiB    16.2s          65 MiB    77  b50dbbcfc6e63282
+     64 MiB     3.7s          65 MiB     5  b50dbbcfc6e63282
+   1024 MiB     3.0s         306 MiB     0  b50dbbcfc6e63282
