@@ -1,0 +1,28 @@
+[package]
+name = "csvidx"
+version = "0.1.0"
+edition = "2021"
+description = "Secondary index for huge CSV files: lookup by key without importing"
+
+[workspace]
+members = ["python"]
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+crc32fast = "1"
+memchr = "2"
+memmap2 = "0.9"
+rayon = "1"
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
