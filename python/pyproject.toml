@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "csvidx"
-version = "0.1.0"
+version = "1.0.0"
 description = "Secondary index for huge CSV files: look up rows by key without importing"
 requires-python = ">=3.9"
 dependencies = []

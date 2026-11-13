@@ -32,8 +32,6 @@ jobs:
       - run: pip install maturin pytest pandas pyarrow duckdb
       - run: maturin develop --release
         working-directory: python
-        env:
-          VIRTUAL_ENV: ""
       - run: python -m pytest -q python/tests
       - name: Python oracle (independent CSV parser)
         run: python -I scripts/oracle_test.py
