@@ -31,7 +31,7 @@ jobs:
           python-version: "3.12"
       # maturin develop needs an active virtualenv
       - run: python -m venv .venv && .venv/bin/pip install -q maturin pytest pandas pyarrow duckdb
-      - run: .venv/bin/maturin develop --release
+      - run: $GITHUB_WORKSPACE/.venv/bin/maturin develop --release
         working-directory: python
         env:
           VIRTUAL_ENV: ${{ github.workspace }}/.venv
