@@ -35,6 +35,8 @@ jobs:
         working-directory: python
         env:
           VIRTUAL_ENV: ${{ github.workspace }}/.venv
+      # scripts/oracle_test.py drives the CLI binary
+      - run: cargo build --release
       - run: .venv/bin/python -m pytest -q python/tests
       - name: Python oracle (independent CSV parser)
         run: .venv/bin/python -I scripts/oracle_test.py
