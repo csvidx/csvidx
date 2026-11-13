@@ -31,12 +31,17 @@
   a { color: inherit; text-decoration: none; }
   .wrap { max-width: 980px; margin: 0 auto; padding: 0 32px; }
 
-  /* entrance: one fade-and-rise, then stillness */
+  /* entrance: hero rises on load; sections reveal on scroll, then stillness */
   @media (prefers-reduced-motion: no-preference) {
-    main > section { animation: rise .6s var(--ease) both; }
-    main > section:nth-child(2) { animation-delay: .05s; }
-    main > section:nth-child(3) { animation-delay: .1s; }
+    main > section.hero { animation: rise .6s var(--ease) both; }
     @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    main > section:not(.hero) { opacity: 0; transform: translateY(16px); transition: opacity .5s var(--ease), transform .5s var(--ease); }
+    main > section.in-view { opacity: 1; transform: none; }
+    .bench .bar { transform: scaleX(0); transform-origin: 4px 50%; transition: transform .7s var(--ease); }
+    .bench .row:nth-child(2) .bar { transition-delay: .08s; }
+    .bench .row:nth-child(3) .bar { transition-delay: .16s; }
+    .bench .row:nth-child(4) .bar { transition-delay: .24s; }
+    .bench.in-view .bar { transform: scaleX(1); }
   }
 
   /* ---------- nav ---------- */
@@ -75,6 +80,7 @@
     transition: color .15s var(--ease);
   }
   .install .copy:hover { color: var(--text); }
+  .install .copy.copied { color: var(--accent); }
   .hero .meta { margin-top: 32px; font-family: var(--mono); font-size: 13px; color: var(--text-3); }
 
   /* ---------- section scaffolding ---------- */
@@ -292,6 +298,36 @@ n   = idx.count([<span class="v">1</span>, <span class="v">2</span>, <span class
     <span class="sp">MIT · v1.0.1 · benchmarks measured on the repo’s test bench</span>
   </div>
 </footer>
+
+<script>
+  (function () {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      document.querySelectorAll("main > section").forEach(function (s) { s.classList.add("in-view"); });
+      return;
+    }
+    // reveal sections and grow the benchmark bars once, as they enter the viewport
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add("in-view");
+        io.unobserve(e.target);
+      });
+    }, { threshold: 0.15 });
+    document.querySelectorAll("main > section, .bench").forEach(function (el) { io.observe(el); });
+
+    // copy feedback: the word changes, the color confirms, then it resets
+    document.querySelectorAll(".install .copy").forEach(function (btn) {
+      var t;
+      btn.addEventListener("click", function () {
+        navigator.clipboard.writeText(btn.previousElementSibling.textContent.trim());
+        btn.textContent = "copied";
+        btn.classList.add("copied");
+        clearTimeout(t);
+        t = setTimeout(function () { btn.textContent = "copy"; btn.classList.remove("copied"); }, 1600);
+      });
+    });
+  })();
+</script>
 
 </body>
 </html>
