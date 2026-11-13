@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>csvidx — a secondary index for huge CSV files</title>
+<meta name="description" content="Look up rows in a multi-gigabyte CSV by key in milliseconds. The CSV stays as is; a flat, hash-ordered index sits beside it. No import, no duplicate.">
+<link rel="icon" type="image/png" href="csvidx.logo.png">
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #131314;
+    --surface-2: #1b1b1d;
+    --hairline: rgba(255,255,255,.08);
+    --text: #f5f5f7;
+    --text-2: rgba(245,245,247,.64);
+    --text-3: rgba(245,245,247,.40);
+    --accent: #f0703c;          /* from the logo's coral */
+    --accent-ink: #1a0d06;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+    --ease: cubic-bezier(.25,.1,.25,1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 400 17px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 32px; }
+
+  /* entrance: one fade-and-rise, then stillness */
+  @media (prefers-reduced-motion: no-preference) {
+    main > section { animation: rise .6s var(--ease) both; }
+    main > section:nth-child(2) { animation-delay: .05s; }
+    main > section:nth-child(3) { animation-delay: .1s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  }
+
+  /* ---------- nav ---------- */
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(10,10,11,.8);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--hairline);
+  }
+  nav .wrap { display: flex; align-items: center; height: 56px; gap: 24px; }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 500; letter-spacing: -.01em; }
+  .brand img { width: 24px; height: 24px; border-radius: 6px; }
+  nav .links { margin-left: auto; display: flex; gap: 24px; font-size: 14px; color: var(--text-2); }
+  nav .links a { transition: color .15s var(--ease); }
+  nav .links a:hover { color: var(--text); }
+
+  /* ---------- hero ---------- */
+  .hero { padding: 128px 0 96px; }
+  .hero h1 {
+    font-size: 64px; line-height: 1.05; letter-spacing: -.03em; font-weight: 600;
+    max-width: 800px;
+  }
+  .hero h1 .accent { color: var(--accent); }
+  .hero p.sub { margin-top: 24px; font-size: 21px; line-height: 1.5; color: var(--text-2); max-width: 640px; }
+  .installs { display: flex; gap: 12px; margin-top: 40px; flex-wrap: wrap; }
+  .install {
+    display: flex; align-items: center; gap: 12px;
+    font-family: var(--mono); font-size: 14px;
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: 10px;
+    padding: 12px 16px; color: var(--text-2);
+  }
+  .install b { color: var(--text); font-weight: 400; }
+  .install .copy {
+    border: 0; background: none; color: var(--text-3); cursor: pointer;
+    font-family: var(--mono); font-size: 12px; padding: 4px;
+    transition: color .15s var(--ease);
+  }
+  .install .copy:hover { color: var(--text); }
+  .hero .meta { margin-top: 32px; font-family: var(--mono); font-size: 13px; color: var(--text-3); }
+  .hero .meta span { color: var(--accent); }
+
+  /* ---------- section scaffolding ---------- */
+  section { padding: 96px 0; border-top: 1px solid var(--hairline); }
+  .kicker { font-family: var(--mono); font-size: 13px; color: var(--text-3); margin-bottom: 16px; }
+  .kicker::before { content: "offset "; color: var(--text-3); }
+  .kicker b { color: var(--accent); font-weight: 400; }
+  h2 { font-size: 36px; line-height: 1.15; letter-spacing: -.02em; font-weight: 600; max-width: 720px; }
+  section > p.lede { margin-top: 16px; font-size: 18px; color: var(--text-2); max-width: 640px; }
+
+  /* ---------- the latency chart: the one bright thing ---------- */
+  .bench { margin-top: 56px; }
+  .bench .row { display: grid; grid-template-columns: 96px 1fr 88px; gap: 16px; align-items: center; padding: 10px 0; }
+  .bench .name { font-size: 15px; color: var(--text-2); }
+  .bench .track { position: relative; height: 32px; background: var(--surface); border-radius: 6px; overflow: hidden; }
+  .bench .bar { position: absolute; inset: 4px auto 4px 4px; border-radius: 4px; background: var(--surface-2); }
+  .bench .row.hot .bar { background: var(--accent); }
+  .bench .row.hot .name { color: var(--text); }
+  .bench .ms { font-family: var(--mono); font-size: 14px; color: var(--text-2); text-align: right; font-variant-numeric: tabular-nums; }
+  .bench .row.hot .ms { color: var(--accent); }
+  .bench .note { margin-top: 20px; font-size: 14px; color: var(--text-3); max-width: 640px; }
+  .bench .note code { font-family: var(--mono); font-size: 13px; color: var(--text-2); }
+
+  /* ---------- terminal ---------- */
+  .term {
+    margin-top: 56px; background: var(--surface); border: 1px solid var(--hairline);
+    border-radius: 14px; padding: 28px 32px; font-family: var(--mono); font-size: 14px; line-height: 2.1;
+    white-space: pre-wrap; overflow-x: auto;
+  }
+  .term .c { color: var(--text-3); }
+  .term .cmd { color: var(--text); }
+  .term .cmd::before { content: "$ "; color: var(--text-3); }
+  .term .out { color: var(--text-2); }
+  .term .hl { color: var(--accent); }
+
+  /* ---------- format diagram: rendered object ---------- */
+  .format { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; margin-top: 56px; align-items: center; }
+  .rec { background: var(--surface); border: 1px solid var(--hairline); border-radius: 14px; padding: 24px; font-family: var(--mono); font-size: 13px; }
+  .rec .head { color: var(--text-3); display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--hairline); margin-bottom: 12px; }
+  .rec .rec-row { display: grid; grid-template-columns: 88px 1fr auto; gap: 12px; padding: 6px 0; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .rec .off { color: var(--text-3); }
+  .rec .bytes { color: var(--text); }
+  .rec .field { color: var(--text-3); }
+  .rec .rec-row.hot .bytes, .rec .rec-row.hot .field { color: var(--accent); }
+  .format ul { list-style: none; }
+  .format li { padding: 16px 0; border-bottom: 1px solid var(--hairline); }
+  .format li:last-child { border-bottom: 0; }
+  .format li b { font-weight: 500; }
+  .format li p { margin-top: 4px; font-size: 15px; color: var(--text-2); }
+  .format li .sig { font-family: var(--mono); font-size: 12px; color: var(--text-3); }
+
+  /* ---------- python ---------- */
+  .py { margin-top: 56px; background: var(--surface); border: 1px solid var(--hairline); border-radius: 14px; padding: 28px 32px; font-family: var(--mono); font-size: 14px; line-height: 1.9; white-space: pre-wrap; overflow-x: auto; }
+  .py .k { color: var(--accent); }
+  .py .s { color: #d8b26a; }
+  .py .v { color: var(--text-2); }
+  .py .cm { color: var(--text-3); }
+
+  /* ---------- limits + footer ---------- */
+  .limits { margin-top: 48px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .limits div { background: var(--surface); border: 1px solid var(--hairline); border-radius: 12px; padding: 20px 24px; }
+  .limits b { font-weight: 500; font-size: 15px; }
+  .limits p { margin-top: 8px; font-size: 14px; color: var(--text-2); }
+  footer { border-top: 1px solid var(--hairline); padding: 40px 0 64px; }
+  footer .wrap { display: flex; align-items: center; gap: 24px; font-size: 14px; color: var(--text-3); }
+  footer a { transition: color .15s var(--ease); }
+  footer a:hover { color: var(--text); }
+  footer .sp { margin-left: auto; }
+  footer img { width: 20px; height: 20px; border-radius: 5px; opacity: .9; }
+
+  @media (max-width: 720px) {
+    .hero { padding: 80px 0 64px; }
+    .hero h1 { font-size: 40px; }
+    .hero p.sub { font-size: 18px; }
+    section { padding: 64px 0; }
+    h2 { font-size: 28px; }
+    .format { grid-template-columns: 1fr; gap: 32px; }
+    .limits { grid-template-columns: 1fr; }
+    .bench .row { grid-template-columns: 72px 1fr 76px; }
+    nav .links { gap: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#"><img src="csvidx.logo.png" alt="csvidx">csvidx</a>
+    <div class="links">
+      <a href="#bench">Benchmarks</a>
+      <a href="#usage">Usage</a>
+      <a href="#format">How it works</a>
+      <a href="https://github.com/csvidx/csvidx">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- hero -->
+  <section class="hero" style="border-top:0">
+    <h1>Query a 4&nbsp;GB CSV<br>in <span class="accent">1.7&nbsp;ms</span></h1>
+    <p class="sub">A secondary index for huge CSV files. The CSV stays exactly as it is — a flat, hash-ordered index sits beside it. No import, no duplicate, no database.</p>
+    <div class="installs">
+      <div class="install"><span><b>pip install csvidx</b></span><button class="copy" onclick="navigator.clipboard.writeText('pip install csvidx')">copy</button></div>
+      <div class="install"><span><b>cargo install csvidx</b></span><button class="copy" onclick="navigator.clipboard.writeText('cargo install csvidx')">copy</button></div>
+    </div>
+    <p class="meta">Rust · Python bindings · MIT · <span>100M-row build: 12.3 s</span></p>
+  </section>
+
+  <!-- benchmark: the one bright moment -->
+  <section id="bench">
+    <p class="kicker"><b>0x00</b> — the number that matters</p>
+    <h2>One user’s orders, out of 100 million rows</h2>
+    <p class="lede">The index reads only the 8 rows that match. Everything else on this chart reads the whole file.</p>
+    <div class="bench" role="img" aria-label="Lookup latency: csvidx 1.7 ms, grep 3.7 s, DuckDB 5.4 s, pandas 21 s on a 4.18 GiB CSV, warm cache">
+      <div class="row hot">
+        <span class="name">csvidx</span>
+        <div class="track"><div class="bar" style="width:0.5%"></div></div>
+        <span class="ms">1.7 ms</span>
+      </div>
+      <div class="row">
+        <span class="name">grep</span>
+        <div class="track"><div class="bar" style="width:17.6%"></div></div>
+        <span class="ms">3.7 s</span>
+      </div>
+      <div class="row">
+        <span class="name">DuckDB</span>
+        <div class="track"><div class="bar" style="width:25.7%"></div></div>
+        <span class="ms">5.4 s</span>
+      </div>
+      <div class="row">
+        <span class="name">pandas</span>
+        <div class="track"><div class="bar" style="width:100%"></div></div>
+        <span class="ms">21.0 s</span>
+      </div>
+    </div>
+    <p class="note">100M rows, 4.18 GiB, warm cache, key matching 8 rows. Same file, same query. From Python it is <code>idx.get(user_id)</code> → a pandas DataFrame; numbers verified against <code>grep</code> row counts. Honest edge: a key with 2% of the file loses to DuckDB on a cold cache — the index pays off while the query takes a small share of rows.</p>
+  </section>
+
+  <!-- usage -->
+  <section id="usage">
+    <p class="kicker"><b>0x10</b> — three commands</p>
+    <h2>Build once, query forever</h2>
+    <p class="lede">Appends are cheap too: new rows go to a small tail file, the main index is never rewritten.</p>
+    <div class="term">
+<span class="c"># build: 100M rows in ~12 s, or in 256 MiB of RAM with --mem-limit-mib</span>
+<span class="cmd">csvidx build orders.csv --key user_id</span>
+
+<span class="cmd">csvidx get orders.csv 8841207</span>
+<span class="out"><span class="hl">8841207</span>,user_08841207,2025-03-14T09:12:04,128.50,shipped,"gift wrap, ribbon"</span>
+<span class="out"><span class="hl">8841207</span>,user_08841207,2025-04-02T18:41:33,42.00,delivered,""</span>
+
+<span class="c"># after appending to the CSV: new rows land in orders.csv.idx.tail (0.54 s for 86 MiB)</span>
+<span class="cmd">csvidx update orders.csv</span>
+    </div>
+  </section>
+
+  <!-- format: second moment -->
+  <section id="format">
+    <p class="kicker"><b>0x20</b> — on disk</p>
+    <h2>A flat array, sorted by hash</h2>
+    <p class="lede">No tree, no page structure to maintain. Record <i>i</i> lives at byte <span style="font-family:var(--mono);font-size:15px">64 + 16·i</span>, so binary search over the mmap is the whole story.</p>
+    <div class="format">
+      <div class="rec" aria-label="Index record layout: 64-byte header, then 16-byte records of key hash and row offset">
+        <div class="head"><span>orders.csv.idx</span><span>little-endian</span></div>
+        <div class="rec-row"><span class="off">0x0000</span><span class="bytes">64 B</span><span class="field">header · CRC32 · indexed_up_to</span></div>
+        <div class="rec-row hot"><span class="off">0x0040</span><span class="bytes">16 B</span><span class="field">key_hash (xxh3) · row_offset</span></div>
+        <div class="rec-row"><span class="off">0x0050</span><span class="bytes">16 B</span><span class="field">key_hash · row_offset</span></div>
+        <div class="rec-row"><span class="off">0x0060</span><span class="bytes">16 B</span><span class="field">… sorted by (hash, offset)</span></div>
+        <div class="rec-row"><span class="off">…</span><span class="bytes">n·16 B</span><span class="field">equal keys are adjacent, in file order</span></div>
+      </div>
+      <ul>
+        <li><b>Binary search over mmap</b><p>Nothing is loaded on open — the index opens in ~0.1 ms and pages come in as the search touches them.</p></li>
+        <li><b>Appends go to a tail</b><p><span class="sig">.idx.tail</span> — new rows land in a small side file; compact merges it in 3 s when it reaches 10%.</p></li>
+        <li><b>A fence for cold caches</b><p><span class="sig">.idx.fence</span> — first hash of every 4 KiB page, one page read per query instead of ~20.</p></li>
+        <li><b>Fixed-memory builds</b><p>External sort: the same index byte-for-byte from 64 MiB of RAM to all-in-memory.</p></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- python -->
+  <section>
+    <p class="kicker"><b>0x30</b> — from pandas</p>
+    <h2>The rows you asked for, as a DataFrame</h2>
+    <div class="py">
+<span class="k">import</span> csvidx
+idx = csvidx.Index(<span class="s">"orders.csv"</span>)          <span class="cm"># opens in ~0.1 ms: mmap, nothing loaded</span>
+df  = idx.get(<span class="v">8841207</span>)                     <span class="cm"># → pandas.DataFrame, rows in file order</span>
+tbl = idx.get_arrow([<span class="v">1</span>, <span class="v">2</span>, <span class="v">3</span>])             <span class="cm"># → pyarrow.Table</span>
+n   = idx.count([<span class="v">1</span>, <span class="v">2</span>, <span class="v">3</span>])                <span class="cm"># per-key counts, without reading rows</span>
+    </div>
+    <p class="lede" style="margin-top:24px">Column types come from the found rows via <span style="font-family:var(--mono);font-size:14px">pd.read_csv</span>, so results match <span style="font-family:var(--mono);font-size:14px">read_csv</span> + a filter. Lookups release the GIL and run in parallel.</p>
+  </section>
+
+  <!-- limits -->
+  <section>
+    <p class="kicker"><b>0x40</b> — read before relying on it</p>
+    <h2>What it does not do</h2>
+    <div class="limits">
+      <div><b>Append-only files</b><p>Edits in the middle of the file are not detected. Suspect edits — run <span style="font-family:var(--mono);font-size:13px">csvidx verify</span>.</p></div>
+      <div><b>Exact match, one column</b><p>Byte-for-byte: <span style="font-family:var(--mono);font-size:13px">"007"</span> ≠ <span style="font-family:var(--mono);font-size:13px">7</span>. Ranges are impossible — the index is ordered by hash.</p></div>
+      <div><b>Small share of rows</b><p>A query returning a few percent of the file is random reads; a scan wins past that point.</p></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <img src="csvidx.logo.png" alt="">
+    <a href="https://github.com/csvidx/csvidx">GitHub</a>
+    <a href="https://crates.io/crates/csvidx">crates.io</a>
+    <a href="https://pypi.org/project/csvidx/">PyPI</a>
+    <span class="sp">MIT · v1.0.1 · benchmarks measured on the repo’s test bench</span>
+  </div>
+</footer>
+
+</body>
+</html>
