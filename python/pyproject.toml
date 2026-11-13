@@ -1,0 +1,20 @@
+[build-system]
+requires = ["maturin>=1.5,<2"]
+build-backend = "maturin"
+
+[project]
+name = "csvidx"
+version = "0.1.0"
+description = "Secondary index for huge CSV files: look up rows by key without importing"
+requires-python = ">=3.9"
+dependencies = []
+classifiers = ["Programming Language :: Rust", "Programming Language :: Python :: 3"]
+
+[project.optional-dependencies]
+pandas = ["pandas"]
+arrow = ["pyarrow"]
+
+[tool.maturin]
+python-source = "."
+module-name = "csvidx._native"
+features = ["pyo3/extension-module"]
