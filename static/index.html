@@ -245,11 +245,11 @@
     <div class="format">
       <div class="rec" aria-label="Index record layout: 64-byte header, then 16-byte records of key hash and row offset">
         <div class="head"><span>orders.csv.idx</span><span>little-endian</span></div>
-        <div class="rec-row"><span class="off">0x0000</span><span class="bytes">64 B</span><span class="field">header · CRC32 · indexed_up_to</span></div>
-        <div class="rec-row hot"><span class="off">0x0040</span><span class="bytes">16 B</span><span class="field">key_hash (xxh3) · row_offset</span></div>
-        <div class="rec-row"><span class="off">0x0050</span><span class="bytes">16 B</span><span class="field">key_hash · row_offset</span></div>
-        <div class="rec-row"><span class="off">0x0060</span><span class="bytes">16 B</span><span class="field">… sorted by (hash, offset)</span></div>
-        <div class="rec-row"><span class="off">…</span><span class="bytes">n·16 B</span><span class="field">equal keys are adjacent, in file order</span></div>
+        <div class="rec-row"><span class="off">0x0000</span><span class="bytes">64B</span><span class="field">header · CRC32 · indexed_up_to</span></div>
+        <div class="rec-row hot"><span class="off">0x0040</span><span class="bytes">16B</span><span class="field">key_hash (xxh3) · row_offset</span></div>
+        <div class="rec-row"><span class="off">0x0050</span><span class="bytes">16B</span><span class="field">key_hash · row_offset</span></div>
+        <div class="rec-row"><span class="off">0x0060</span><span class="bytes">16B</span><span class="field">… sorted by (hash, offset)</span></div>
+        <div class="rec-row"><span class="off">…</span><span class="bytes">n·16B</span><span class="field">equal keys are adjacent, in file order</span></div>
       </div>
       <ul>
         <li><b>Binary search over mmap</b><p>Nothing is loaded on open — the index opens in ~0.1 ms and pages come in as the search touches them.</p></li>
