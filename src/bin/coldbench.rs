@@ -18,17 +18,17 @@
 //!
 //! Linux only.
 
-#[cfg(not(unix))]
+#[cfg(not(target_os = "linux"))]
 fn main() {
     eprintln!("coldbench needs posix_fadvise and /proc: Linux only");
 }
 
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 fn main() {
     real::main()
 }
 
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 mod real {
     use clap::Parser;
     use csvidx::header::*;
