@@ -8,6 +8,7 @@ repository = "https://github.com/csvidx/csvidx"
 readme = "README.md"
 keywords = ["csv", "index", "search", "data"]
 categories = ["database-implementations", "command-line-utilities"]
+exclude = ["static", "data*", "scripts", "results", "python", ".github", "run_all.sh", "requirements.txt"]
 
 [workspace]
 members = ["python"]
