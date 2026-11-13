@@ -1,0 +1,8 @@
+/target
+/data*
+*.idx
+*.idx.tmp
+__pycache__/
+.venv-py/
+*.so
+.DS_Store
