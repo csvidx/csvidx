@@ -1,5 +1,9 @@
 # csvidx — a secondary index for huge CSV files
 
+[![CI](https://github.com/csvidx/csvidx/actions/workflows/ci.yml/badge.svg)](https://github.com/csvidx/csvidx/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/csvidx.svg)](https://crates.io/crates/csvidx)
+[![PyPI](https://img.shields.io/pypi/v/csvidx.svg)](https://pypi.org/project/csvidx/)
+
 README in Russian: [README.ru.md](README.ru.md).
 
 The CSV stays as is. Next to it lives `file.csv.idx`: a flat array of `(key hash, row offset)` pairs, sorted by hash. Lookup is a binary search over the `mmap`ed index, then only the needed rows are read. The file is never imported or duplicated.

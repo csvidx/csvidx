@@ -12,7 +12,7 @@ license = "MIT"
 readme = "../README.md"
 classifiers = ["Programming Language :: Rust", "Programming Language :: Python :: 3"]
 [project.urls]
-Repository = "https://github.com/hoopengo/csvidx"
+Repository = "https://github.com/csvidx/csvidx"
 
 [project.optional-dependencies]
 pandas = ["pandas"]
